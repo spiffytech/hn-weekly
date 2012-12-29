@@ -1,0 +1,17 @@
+<html>
+<body>
+
+    {{#posts}}
+        <article>
+            <header>
+                <a href="{{url}}">{{title}}</a>
+            </header>
+            <p>
+                {{points}} Points 
+                || <a href="http://news.ycombinator.com/item?id={{id}}">{{num_comments}} Comments</a> 
+                || Created on {{create_ts}}</p>
+        </article>
+    {{/posts}}
+
+</body>
+</html>
