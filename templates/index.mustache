@@ -1,4 +1,7 @@
 <html>
+<head>
+    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="HN Weekly">
+</head>
 <body>
 
     {{#posts}}
@@ -8,7 +11,7 @@
             </header>
             <p>
                 {{points}} Points 
-                || <a href="http://news.ycombinator.com/item?id={{id}}">{{num_comments}} Comments</a> 
+                || <a href="{{permalink}}">{{num_comments}} Comments</a> 
                 || Created on {{create_ts}}</p>
         </article>
     {{/posts}}

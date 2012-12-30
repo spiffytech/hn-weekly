@@ -2,7 +2,7 @@ var cons = require("consolidate");
 
 var express = require("express");
 var app = express();
-app.use(require("connect").bodyParser());
+app.use(express.bodyParser());
 app.use(express.cookieParser());
 app.use(express.logger());
 app.engine("mustache", cons.mustache);
@@ -18,57 +18,87 @@ requester = new Requester();
 var _s = require("underscore.string");
 
 app.get("/", function(req, res) {
-    day = req.query.day || new Date().getDay();
-    ts_range = calc_ts_range(day);
-
-    get_data = function(start_index, posts) {
-        if(posts === undefined) {
-            console.log("Initing posts array");
-            posts = [];
-        }
-
-        var limit = 100;
-        var query_str = "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][create_ts]=[%s TO %s]&pretty_print=true&sortby=points desc&limit=%d&start=%d";
-        console.log(_s.sprintf(query_str, ts_range.start, ts_range.end, limit, start_index))
-        requester.get(
-            _s.sprintf(query_str, ts_range.start, ts_range.end, limit, start_index),
-            function(body) {
-                var resp = JSON.parse(body);
-                console.log(resp.hits);
-                console.log("start = " + start_index);
-
-                for(result in resp.results) {
-                    if(!resp.results.hasOwnProperty(result)) continue;
-                    posts.push(resp.results[result]);
-                }
-                console.log("Total posts count: ", posts.length);
-                if(start_index + limit <= 300) {  // HN Search limits us to 1000 hits
-                    get_data(start_index + limit, posts);
-                } else {
-                    not_stupid_posts = [];
-                    for(post in posts) {
-                        not_stupid_posts.push(posts[post].item);
-                    }
-                    finish(not_stupid_posts, req, res);
-                }
-            }
+    do_stuff(req, function(posts) {
+        console.log(posts);
+        res.render(
+            "index",
+            {posts: posts}
         );
-    };
-
-    get_data(0)
+    });
 });
 
-finish = function(posts, req, res) {
-    var culled_item_count = Math.round(posts.length * (1-req.query.threshold) + .5);  // Not sure what the .5 is for, but that's what Wikipedia says should be in there
-    var culled_items = posts.slice(0, culled_item_count);
-    console.log("Culled count is " + culled_item_count);
-    console.log(calc_point_range(culled_items));
+app.get("/feed.xml", function(req, res) {
+    do_stuff(req, function(posts) {
+        res.render(
+            "feed",
+            {posts: posts}
+        );
+    });
+});
 
-    res.render(
-        "index",
-        {posts: culled_items}
-    );
+do_stuff = function(req, callback) {
+    var day = req.query.day || new Date().getDay();
+    var threshold = req.query.threshold || .9;
+
+    get_data(day, 0, function(posts) {
+        var culled_posts = percentile_filter(posts, threshold);
+        callback(culled_posts);
+    });
 }
+
+get_data = function(day, start_index, callback, posts) {
+    var ts_range = calc_ts_range(day);
+    var limit = 100;
+    var query_str = "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][create_ts]=[%s TO %s]&pretty_print=true&sortby=points desc&limit=%d&start=%d";
+    if(posts === undefined) {
+        posts = [];
+    }
+
+    requester.get(
+        _s.sprintf(query_str, ts_range.start, ts_range.end, limit, start_index),
+        function(body) {
+            var resp = JSON.parse(body);
+
+            for(result in resp.results) {
+                if(!resp.results.hasOwnProperty(result)) continue;
+                posts.push(resp.results[result]);
+            }
+            if(start_index + limit <= 300) {  // HN Search limits us to 1000 hits
+                get_data(day, start_index + limit, callback, posts);
+            } else {
+                var not_stupid_posts = [];
+                for(var post in posts) {
+                    posts[post].item.permalink = "http://news.ycombinator.com/item?id=" + posts[post].item.id;
+                    var d = new Date(posts[post].item.create_ts);
+
+                    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                    var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+                    posts[post].item.rss_date = _s.sprintf("%s, %02d %s %d %02d:%02d:%02d UTC", 
+                        days[d.getUTCDay()], 
+                        d.getUTCDate(), 
+                        months[d.getUTCMonth()],
+                        d.getUTCFullYear(),
+                        d.getUTCHours(),
+                        d.getUTCMinutes(),
+                        d.getUTCSeconds()
+                    );
+                    not_stupid_posts.push(posts[post].item);
+                }
+                callback(not_stupid_posts);
+            }
+        }
+    );
+};
+
+
+percentile_filter = function(posts, threshold) {
+    var culled_post_count = Math.round(posts.length * (1-threshold) + .5);  // Not sure what the .5 is for, but that's what Wikipedia says should be in there
+    var culled_posts = posts.slice(0, culled_post_count);
+    console.log(calc_point_range(culled_posts));
+
+    return culled_posts;
+}
+
 
 calc_point_range = function(posts) {
     return {
@@ -76,6 +106,7 @@ calc_point_range = function(posts) {
         max: posts[0].points
     };
 }
+
 
 calc_ts_range = function(day) {
     var end = new Date();

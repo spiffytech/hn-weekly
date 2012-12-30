@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+<channel>
+        <title>HN Weekly</title>
+        <description>Weekly digest of the best Hacker News posts</description>
+        <link>http://hnweekly.spiffyte.ch</link>
+        <lastBuildDate>Mon, 06 Sep 2010 00:01:00 +0000 </lastBuildDate>
+        <pubDate>Mon, 06 Sep 2009 16:45:00 +0000 </pubDate>
+        <ttl>1800</ttl>
+ 
+        {{#posts}}
+            <item>
+                    <title>({{points}}) {{title}} - {{domain}}</title>
+                    <description>
+                        <![CDATA[
+                        <p><a href="{{url}}">{{title}}</a> - {{domain}}</p>
+                        <p>Submitted by {{username}} on {{create_ts}}</p>
+                        <p><a href="{{permalink}}">{{num_comments}} comments</a></p>
+                        ]]>
+                    </description>
+                    <link>{{permalink}}</link>
+                    <guid>{{permalink}}</guid>
+                    <pubDate>{{rss_date}}</pubDate>
+                    <author>{{username}}</author>
+            </item>
+        {{/posts}}
+ 
+</channel>
+</rss>
