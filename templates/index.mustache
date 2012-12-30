@@ -1,8 +1,99 @@
-<html>
-<head>
-    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="HN Weekly">
-</head>
-<body>
+{{> header}}
+
+<style>
+    .day-chooser, .threshold-chooser {
+        width: 100%;
+    }
+</style>
+
+<div class="row-fluid">
+    <div class="span4 offset2">
+        <button class="threshold-chooser btn" data-threshold=".75">75th percentile</button><br>
+        <button class="threshold-chooser btn" data-threshold=".80">80th percentile</button><br>
+        <button class="threshold-chooser btn" data-threshold=".85">85th percentile</button><br>
+        <button class="threshold-chooser btn" data-threshold=".90">90th percentile</button><br>
+        <button class="threshold-chooser btn" data-threshold=".95">95th percentile</button><br>
+    </div>
+
+    <div class="span4">
+        <button class="day-chooser btn" data-day="0">Sunday</button><br>
+        <button class="day-chooser btn" data-day="1">Monday</button><br>
+        <button class="day-chooser btn" data-day="2">Tuesday</button><br>
+        <button class="day-chooser btn" data-day="3">Wednesday</button><br>
+        <button class="day-chooser btn" data-day="4">Thursday</button><br>
+        <button class="day-chooser btn" data-day="5">Friday</button><br>
+        <button class="day-chooser btn" data-day="6">Saturday</button><br>
+    </div>
+</div>
+
+<div id="posts"></div>
+
+
+<script type="text/javascript">
+    var fetch_posts = function() {
+        var threshold = localStorage.getItem("threshold");
+        var day = localStorage.getItem("day");
+        jQuery.get(
+            "/posts.json", 
+            {
+                threshold: threshold,
+                day: day
+            },
+            function(data) {
+                data.domain = window.location.host;
+                data.threshold = threshold;
+                data.day = day;
+                var posts_html = ich.posts_tpl(data);
+                jQuery("#posts").html(posts_html);
+            }
+        );
+        jQuery("#posts").html("");
+        jQuery("#posts").spin("large");
+    }
+
+    jQuery(document).ready(function() {
+        jQuery(".threshold-chooser").each(function() {
+            if(jQuery(this).attr("data-threshold") === localStorage.getItem("threshold")) {
+                jQuery(this).addClass("btn-primary");
+            }
+        });
+        jQuery(".day-chooser").each(function() {
+            if(jQuery(this).attr("data-day") === localStorage.getItem("day")) {
+                jQuery(this).addClass("btn-primary");
+            }
+        });
+
+        fetch_posts();
+
+        jQuery(".threshold-chooser").on("click", function() {
+            jQuery(".threshold-chooser").each(function() {
+                jQuery(this).removeClass("btn-primary");
+            });
+            jQuery(this).addClass("btn-primary");
+            var threshold = jQuery(this).attr("data-threshold");
+            localStorage.setItem("threshold", threshold);
+            fetch_posts();
+        });
+        jQuery(".day-chooser").on("click", function() {
+            jQuery(".day-chooser").each(function() {
+                jQuery(this).removeClass("btn-primary");
+            });
+            jQuery(this).addClass("btn-primary");
+            var day = jQuery(this).attr("data-day");
+            localStorage.setItem("day", day);
+            fetch_posts();
+        });
+    });
+</script>
+
+{{=|a| |a|=}}
+<script id="posts_tpl" type="text/html">
+    <p>Your RSS feed URL is:</p>
+    <p>
+        <a href="http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}">
+            http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}
+        </a>
+    </p>
 
     {{#posts}}
         <article>
@@ -11,10 +102,12 @@
             </header>
             <p>
                 {{points}} Points 
-                || <a href="{{permalink}}">{{num_comments}} Comments</a> 
-                || Created on {{create_ts}}</p>
+                | <a href="{{permalink}}">{{num_comments}} Comments</a> 
+                | Created on {{create_ts}}
+            </p>
         </article>
     {{/posts}}
+</script>
+|a|={{ }}=|a|
 
-</body>
-</html>
+{{> footer}}

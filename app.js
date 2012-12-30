@@ -18,12 +18,23 @@ requester = new Requester();
 var _s = require("underscore.string");
 
 app.get("/", function(req, res) {
+    res.render(
+        "index",
+        {partials: {
+            header: "header",
+            footer: "footer"
+        }}
+    );
+});
+
+app.get("/posts.json", function(req, res) {
     do_stuff(req, function(posts) {
-        console.log(posts);
-        res.render(
-            "index",
-            {posts: posts}
-        );
+        //console.log(posts);
+        res.send({
+            posts: posts,
+            point_range: calc_point_range(posts),
+            num_posts: posts.length
+        });
     });
 });
 
@@ -39,6 +50,8 @@ app.get("/feed.xml", function(req, res) {
 do_stuff = function(req, callback) {
     var day = req.query.day || new Date().getDay();
     var threshold = req.query.threshold || .9;
+    console.log("Day: " + date_format_rss(new Date(calc_ts_range(day).end)));
+    console.log("Threshold: " + threshold);
 
     get_data(day, 0, function(posts) {
         var culled_posts = percentile_filter(posts, threshold);
@@ -71,17 +84,7 @@ get_data = function(day, start_index, callback, posts) {
                     posts[post].item.permalink = "http://news.ycombinator.com/item?id=" + posts[post].item.id;
                     var d = new Date(posts[post].item.create_ts);
 
-                    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                    var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-                    posts[post].item.rss_date = _s.sprintf("%s, %02d %s %d %02d:%02d:%02d UTC", 
-                        days[d.getUTCDay()], 
-                        d.getUTCDate(), 
-                        months[d.getUTCMonth()],
-                        d.getUTCFullYear(),
-                        d.getUTCHours(),
-                        d.getUTCMinutes(),
-                        d.getUTCSeconds()
-                    );
+                    posts[post].item.rss_date = date_format_rss(d);
                     not_stupid_posts.push(posts[post].item);
                 }
                 callback(not_stupid_posts);
@@ -90,6 +93,19 @@ get_data = function(day, start_index, callback, posts) {
     );
 };
 
+date_format_rss = function(d) {
+    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return _s.sprintf("%s, %02d %s %d %02d:%02d:%02d UTC", 
+        days[d.getUTCDay()], 
+        d.getUTCDate(), 
+        months[d.getUTCMonth()],
+        d.getUTCFullYear(),
+        d.getUTCHours(),
+        d.getUTCMinutes(),
+        d.getUTCSeconds()
+    );
+}
 
 percentile_filter = function(posts, threshold) {
     var culled_post_count = Math.round(posts.length * (1-threshold) + .5);  // Not sure what the .5 is for, but that's what Wikipedia says should be in there
