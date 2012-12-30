@@ -79,6 +79,9 @@ calc_point_range = function(posts) {
 
 calc_ts_range = function(day) {
     var end = new Date();
+    end.setUTCHours(0);
+    end.setUTCMinutes(0);
+    end.setUTCMilliseconds(0);
     while(end.getDay() != day) {
         end.setDate(end.getDate() - 1);
     }
