@@ -1,22 +1,8 @@
+.brand a {
+    font-weight: bold;
+    font-size: 38.5px;  /* Stupid Bootstrap seems to specify this in px, not ems, so I don't have a relative size to reset to */
+    color: #777;
+}
 
-
-/* ==========================================================================
-   Author's custom styles
-   ========================================================================== */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+body {
+}

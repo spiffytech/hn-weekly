@@ -95,15 +95,16 @@
         </a>
     </p>
 
+    <h2>Your sample posts</h2>
     {{#posts}}
         <article>
             <header>
-                <a href="{{url}}">{{title}}</a>
+                <h3><a href="{{url}}">{{title}}</a></h3>
             </header>
             <p>
                 {{points}} Points 
                 | <a href="{{permalink}}">{{num_comments}} Comments</a> 
-                | Created on {{create_ts}}
+                | Created on {{rss_date}}
             </p>
         </article>
     {{/posts}}
