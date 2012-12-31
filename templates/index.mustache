@@ -8,11 +8,11 @@
 
 <div class="row-fluid">
     <div class="span4 offset2">
-        <button class="threshold-chooser btn" data-threshold=".75">75th percentile</button><br>
-        <button class="threshold-chooser btn" data-threshold=".80">80th percentile</button><br>
-        <button class="threshold-chooser btn" data-threshold=".85">85th percentile</button><br>
-        <button class="threshold-chooser btn" data-threshold=".90">90th percentile</button><br>
-        <button class="threshold-chooser btn" data-threshold=".95">95th percentile</button><br>
+        <button class="threshold-chooser btn" data-threshold="10">Top 10</button><br>
+        <button class="threshold-chooser btn" data-threshold="25">Top 25</button><br>
+        <button class="threshold-chooser btn" data-threshold="50">Top 50</button><br>
+        <button class="threshold-chooser btn" data-threshold="100">Top 100</button><br>
+        <button class="threshold-chooser btn" data-threshold="300">Top 300</button><br>
     </div>
 
     <div class="span4">
@@ -100,6 +100,7 @@
         <article>
             <header>
                 <h3><a href="{{url}}">{{title}}</a></h3>
+                 - {{domain}}
             </header>
             <p>
                 {{points}} Points 

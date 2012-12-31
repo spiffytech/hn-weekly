@@ -28,6 +28,12 @@ app.get("/", function(req, res) {
 });
 
 app.get("/posts.json", function(req, res) {
+    try {
+        validate_inputs(req, res);
+    } catch(e) {
+        return;
+    }
+
     do_stuff(req, function(posts) {
         //console.log(posts);
         res.send({
@@ -39,6 +45,12 @@ app.get("/posts.json", function(req, res) {
 });
 
 app.get("/feed.xml", function(req, res) {
+    try {
+        validate_inputs(req, res);
+    } catch(e) {
+        return;
+    }
+
     do_stuff(req, function(posts) {
         res.render(
             "feed",
@@ -49,12 +61,12 @@ app.get("/feed.xml", function(req, res) {
 
 do_stuff = function(req, callback) {
     var day = req.query.day || new Date().getDay();
-    var threshold = req.query.threshold || .9;
+    var threshold = req.query.threshold || 25;
     console.log("Day: " + date_format_rss(new Date(calc_ts_range(day).end)));
     console.log("Threshold: " + threshold);
 
     get_data(day, 0, function(posts) {
-        var culled_posts = percentile_filter(posts, threshold);
+        var culled_posts = posts.slice(0, threshold);
         callback(culled_posts);
     });
 }
@@ -92,6 +104,22 @@ get_data = function(day, start_index, callback, posts) {
         }
     );
 };
+
+validate_inputs = function(req, res) {
+    if(req.query.threshold) {
+        if(req.query.threshold <= 0 || req.query.threshold > 1000) {
+            res.send(404, {error: "Threshold out of range"});
+            throw "Threshold out of range";
+        }
+    }
+
+    if(req.query.day) {
+        if(req.query.day < 0 || req.query.day > 6) {
+            res.send(404, {error: "Day out of range"});
+            throw "Day out of range";
+        }
+    }
+}
 
 date_format_rss = function(d) {
     var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
