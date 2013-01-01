@@ -26,7 +26,9 @@
     </div>
 </div>
 
-<div id="posts"></div>
+<hr>
+
+<div id="posts" class="row-fluid"></div>
 
 
 <script type="text/javascript">
@@ -47,8 +49,7 @@
                 jQuery("#posts").html(posts_html);
             }
         );
-        jQuery("#posts").html("");
-        jQuery("#posts").spin("large");
+        jQuery("#posts").html("").spin("large");
     }
 
     jQuery(document).ready(function() {
