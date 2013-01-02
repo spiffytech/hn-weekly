@@ -144,7 +144,7 @@ var get_data = function(day, start_index, callback, posts) {
 
 var validate_inputs = function(req, res) {
     if(req.query.threshold) {
-        if(req.query.threshold <= 0 || req.query.threshold > 1000) {
+        if(req.query.threshold <= 0 || req.query.threshold > 300) {
             res.send(404, {error: "Threshold out of range"});
             throw "Threshold out of range";
         }
