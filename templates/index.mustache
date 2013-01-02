@@ -89,9 +89,8 @@
 
 {{=|a| |a|=}}
 <script id="posts_tpl" type="text/html">
-    <p>Your RSS feed URL is:</p>
     <p>
-        <a href="http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}">
+        <img src="/img/rss.svg" width="20px"> <a href="http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}">
             http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}
         </a>
     </p>
@@ -101,7 +100,7 @@
         <article>
             <header>
                 <h3><a href="{{url}}">{{title}}</a></h3>
-                 - {{domain}}
+                 {{domain}}
             </header>
             <p>
                 {{points}} Points 

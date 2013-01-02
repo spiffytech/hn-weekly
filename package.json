@@ -1,0 +1,18 @@
+{
+  "name": "hn-weekly",
+  "description": "Weekly digest of the best of Hacker News",
+  "author": "spiffytech <spiffytech@spiffyte.ch>",
+  "dependencies": {
+    "consolidate": "0.7.x",
+    "express": "3.0.x",
+    "lru-cache": "2.2.x",
+    "requester": "0.1.6",
+    "step": "0.0.5",
+    "underscore.string": "2.3.x",
+    "mustache": "0.7.x"
+  },
+  "devDependencies": {
+  },
+  "engine": "node >= 0.8.1",
+  "version": "1.0.0"
+}

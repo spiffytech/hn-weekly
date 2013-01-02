@@ -75,6 +75,7 @@ app.get("/feed.xml", function(req, res) {
     }
 
     do_stuff(req, function(posts) {
+        res.type("application/rss+xml");
         res.render(
             "feed",
             {posts: posts}
