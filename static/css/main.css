@@ -15,3 +15,13 @@ body footer {
     border-top: 1px solid #E5E5E5;
     background-color: whiteSmoke;
 }
+
+.button-desc {
+    font-style: italic;
+    text-align: center;
+}
+
+.post-domain {
+    font-size: 50%;
+    color: #777;
+}

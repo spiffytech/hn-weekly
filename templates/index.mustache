@@ -8,6 +8,7 @@
 
 <div class="row-fluid">
     <div class="span4 offset2">
+        <p class="button-desc">How many posts you want to see</p>
         <button class="threshold-chooser btn" data-threshold="10">Top 10</button><br>
         <button class="threshold-chooser btn" data-threshold="25">Top 25</button><br>
         <button class="threshold-chooser btn" data-threshold="50">Top 50</button><br>
@@ -16,6 +17,7 @@
     </div>
 
     <div class="span4">
+        <p class="button-desc">Posts will be delivered on midnight UTC of this day</p>
         <button class="day-chooser btn" data-day="0">Sunday</button><br>
         <button class="day-chooser btn" data-day="1">Monday</button><br>
         <button class="day-chooser btn" data-day="2">Tuesday</button><br>
@@ -23,11 +25,6 @@
         <button class="day-chooser btn" data-day="4">Thursday</button><br>
         <button class="day-chooser btn" data-day="5">Friday</button><br>
         <button class="day-chooser btn" data-day="6">Saturday</button><br>
-    </div>
-
-    <div class="span2">
-        <span style="font-weight: bold; font-size: 5em;">←</span> 
-        <span style="font-size: 3em;">UTC</span>
     </div>
 </div>
 
@@ -110,12 +107,10 @@
         </a>
     </p>
 
-    <h2>Your sample posts</h2>
     {{#posts}}
         <article>
             <header>
-                <h3><a href="{{url}}">{{title}}</a></h3>
-                 {{domain}}
+                <h3><a href="{{url}}">{{title}}</a> - <span class="post-domain">{{domain}}</span></h3>
             </header>
             <p>
                 {{points}} Points 
