@@ -37,6 +37,19 @@ app.get("/", function(req, res) {
     );
 });
 
+app.get("/about", function(req, res) {
+    res.render(
+        "about",
+        {
+            title: "About - ",
+            partials: {
+                header: "header",
+                footer: "footer"
+            }
+        }
+    );
+});
+
 app.get("/posts.json", function(req, res) {
     try {
         validate_inputs(req, res);
@@ -105,7 +118,7 @@ var get_data = function(day, start_index, callback, posts) {
                 if(!resp.results.hasOwnProperty(result)) continue;
                 posts.push(resp.results[result]);
             }
-            if(start_index + limit <= 300) {  // HN Search limits us to 1000 hits
+            if(start_index + limit <= 1000) {  // HN Search limits us to 1000 hits
                 get_data(day, start_index + limit, callback, posts);
             } else {
                 var not_stupid_posts = [];
