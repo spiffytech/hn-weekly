@@ -17,7 +17,7 @@ var step = require("step");
 var cache_age = 1000 * 60 * 30;
 var LRU = require("lru-cache");
 var cache = LRU({
-    max: 1024 * 1024 * 5,
+    max: 1024 * 1024 * 15,
     length: function(val) {return JSON.stringify(val).length;},
     maxAge: cache_age
 });
@@ -86,8 +86,9 @@ app.get("/feed.xml", function(req, res) {
 var do_stuff = function(req, callback) {
     var day = req.query.day || new Date().getUTCDay();
     var threshold = req.query.threshold || 25;
-    console.log("Day: " + date_format_rss(new Date(calc_ts_range(day).end)));
-    console.log("Threshold: " + threshold);
+
+    //var vals = cache.values();
+    //for(var v in vals) console.log(JSON.stringify(vals[v]).length / (1024 * 1024));
 
     get_data(day, 0, function(posts) {
         var culled_posts = posts.slice(0, threshold);
@@ -119,7 +120,7 @@ var get_data = function(day, start_index, callback, posts) {
                 if(!resp.results.hasOwnProperty(result)) continue;
                 posts.push(resp.results[result]);
             }
-            if(start_index + limit <= 1000) {  // HN Search limits us to 1000 hits
+            if(start_index + limit <= 300) {
                 get_data(day, start_index + limit, callback, posts);
             } else {
                 var not_stupid_posts = [];

@@ -24,6 +24,11 @@
         <button class="day-chooser btn" data-day="5">Friday</button><br>
         <button class="day-chooser btn" data-day="6">Saturday</button><br>
     </div>
+
+    <div class="span2">
+        <span style="font-weight: bold; font-size: 5em;">←</span> 
+        <span style="font-size: 3em;">UTC</span>
+    </div>
 </div>
 
 <hr>
@@ -35,6 +40,7 @@
     var fetch_posts = function() {
         var threshold = localStorage.getItem("threshold");
         var day = localStorage.getItem("day");
+
         jQuery.get(
             "/posts.json", 
             {
@@ -53,13 +59,22 @@
     }
 
     jQuery(document).ready(function() {
+        var threshold = localStorage.getItem("threshold");
         jQuery(".threshold-chooser").each(function() {
-            if(jQuery(this).attr("data-threshold") === localStorage.getItem("threshold")) {
+            if(
+                jQuery(this).attr("data-threshold") === threshold
+                || !threshold && jQuery(this).attr("data-threshold") == 25
+            ) {
                 jQuery(this).addClass("btn-primary");
             }
         });
+
+        var day = localStorage.getItem("day");
         jQuery(".day-chooser").each(function() {
-            if(jQuery(this).attr("data-day") === localStorage.getItem("day")) {
+            if(
+                jQuery(this).attr("data-day") === day
+                || (!day && jQuery(this).attr("data-day") == new Date().getUTCDay())
+            ) {
                 jQuery(this).addClass("btn-primary");
             }
         });
