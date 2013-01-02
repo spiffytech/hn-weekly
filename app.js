@@ -221,5 +221,5 @@ var calc_ts_range = function(day) {
 }
 
 
-app.listen(3000);
+app.listen(process.env.VCAP_APP_PORT || 3000);
 console.log("Yay, started!");
