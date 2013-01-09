@@ -1,6 +1,17 @@
 "use strict";
 
+try {
+    var conf = require("./conf.js");
+} catch(e) {}
+
+var GoogleAnalytics = require("ga");
+var ga = new GoogleAnalytics(conf.google_analytics_id, conf.fqdn);
+
 var cons = require("consolidate");
+
+var pg = require("pg");
+var client = new pg.Client("postgres://postgres:postgres@localhost:5432/hnweekly");
+client.connect();
 
 var express = require("express");
 var app = express();
@@ -90,29 +101,29 @@ var do_stuff = function(req, callback) {
     //var vals = cache.values();
     //for(var v in vals) console.log(JSON.stringify(vals[v]).length / (1024 * 1024));
 
-    get_data(day, 0, function(posts) {
+    refresh_data(day, 0, function(posts) {
         var culled_posts = posts.slice(0, threshold);
         callback(culled_posts);
     });
 }
 
-var get_data = function(day, start_index, callback, posts) {
-    var ts_range = calc_ts_range(day);
+var refresh_data = function(start_index, posts) {
+    var start_date = new Date();
+    start_date.setTime(start_date.getTime() - 1000 * 60 * 60 * 24 * 14);
+    var max_posts = 300;
     var limit = 100;
-    var query_str = "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][create_ts]=[%s TO %s]&pretty_print=true&sortby=points desc&limit=%d&start=%d";
+    var query_str = "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][create_ts]=[%s TO *]&filter[fields][type]=submission&pretty_print=true&sortby=points desc&limit=%d&start=%d";
+    if(start_index === undefined) {
+        start_index = 0;
+    }
     if(posts === undefined) {
         posts = [];
     }
 
-    var cached_posts = cache.get("day-" + day);
-    if(cached_posts) {
-        console.log("Cache hit: day " + day);
-        callback(cached_posts);
-        return;
-    }
-
-    requester.get(
-        _s.sprintf(query_str, ts_range.start, ts_range.end, limit, start_index),
+    step(
+        function() {
+            requester.get(_s.sprintf(query_str, start_date.toISOString(), limit, start_index), this);
+        },
         function(body) {
             var resp = JSON.parse(body);
 
@@ -120,8 +131,8 @@ var get_data = function(day, start_index, callback, posts) {
                 if(!resp.results.hasOwnProperty(result)) continue;
                 posts.push(resp.results[result]);
             }
-            if(start_index + limit <= 300) {
-                get_data(day, start_index + limit, callback, posts);
+            if(start_index + limit < max_posts) {
+                refresh_data(start_index + limit, posts);
             } else {
                 var not_stupid_posts = [];
                 for(var post in posts) {
@@ -131,16 +142,142 @@ var get_data = function(day, start_index, callback, posts) {
                     posts[post].item.rss_date = date_format_rss(d);
                     not_stupid_posts.push(posts[post].item);
                 }
-                console.log("Cache miss: day " + day);
-                if(within_cache_intelval(day)) {
-                    console.log("Data size: " + (JSON.stringify(not_stupid_posts).length / 1024) / 1024);
-                    cache.set("day-" + day, not_stupid_posts);
-                }
-                callback(not_stupid_posts);
+                setTimeout(
+                    (function(cb) {
+                        return function() {
+                            cb(not_stupid_posts);
+                        };
+                    })(this),
+                    0
+                );
             }
+        },
+        function(posts) {
+            var group = this.group();
+            for(var post in posts) {
+                if(!posts.hasOwnProperty(post)) continue;
+
+                (function(post, group) {
+                    step(
+                        function() {
+                            client.query(
+                                "update posts set points=$1, title=$2, num_comments=$3 where post_id=$4",
+                                [post.points, post.title, post.num_comments, new Date(post.create_ts)],
+                                this
+                            );
+                        },
+                        function(err, results) {
+                            console.log(post.id);
+                            client.query(
+                                "insert into posts (" +
+                                    "post_id, " +
+                                    "points, " +
+                                    "title, " +
+                                    "domain, " +
+                                    "username, " +
+                                    "url, " +
+                                    "num_comments, " +
+                                    "creation_date" +
+                                ") select $1, $2, $3, $4, $5, $6, $7, $8 where not exists (select 1 from posts where post_id=$1)",
+                                [
+                                    post.id,
+                                    post.points,
+                                    post.title,
+                                    post.domain,
+                                    post.username,
+                                    post.url,
+                                    post.num_comments,
+                                    new Date(post.create_ts)
+                                ],
+                                group
+                            );
+                        }
+                    );
+                })(posts[post], group());
+            }
+        },
+        function(err, results) {
+            if(false) {
+                client.end();
+                return;
+            }
+
+            step(
+                function() {
+                    client.query("BEGIN", this);
+                },
+                function(err, results) {
+                    var time_of_day = calc_time_of_day();
+
+                    client.query(
+                        "select count(*) from post_uses",
+                        this
+                    );
+                },
+                function(err, results) {
+                    console.log(results);
+                    if(results.rows[0].count == 0) {
+                        client.query("insert into post_uses (select post_id, current_timestamp as use_date, $1 as use_tod from posts where age(creation_date) > '1 week')", ["bogus"], this);
+                    } else {
+                        setTimeout(this, 0);
+                    }
+                },
+                function(err, results) {
+                    var time_of_day = calc_time_of_day();
+                    client.query(
+                        "insert into post_uses (" +
+                            "select " +
+                                "posts.post_id, " +
+                                "current_timestamp as use_date, " +
+                                "$1 as use_tod " +
+                            "from posts " +
+                            "left outer join (" +
+                                "select * from post_uses " +
+                                "where " +
+                                    "use_tod = $1 and " +
+                                    "to_char(use_date, 'D')::integer = $2 " +
+                                    "and use_tod != 'bogus'" +
+                            ") as post_uses " +
+                            "on posts.post_id=post_uses.post_id " +
+                            "where post_uses.post_id is null " +
+                            "order by posts.points desc " +
+                            "limit 25" +
+                        ")",
+                        [time_of_day, new Date().getUTCDay() + 1], // JS uses days starting at 0, postgres starting at 1
+                        this
+                    );
+                },
+                function(err, results) {
+                    console.log(err);
+                    console.log(results.rows.length);
+                    console.log(results.rows);
+
+                    client.query("END", this);
+                },
+                function(err, results) {
+                },
+                function() {
+                    client.end();
+                }
+            );
         }
     );
 };
+
+
+var calc_time_of_day = function() {
+    var hour = new Date().getUTCHours();
+    if(hour < 6) {
+        return "midnight";
+    } else if(hour < 12) {
+        return "morning";
+    } else if(hour < 18) {
+        return "noon";
+    } else {
+        return "evening";
+    }
+}
+
 
 var validate_inputs = function(req, res) {
     if(req.query.threshold) {
@@ -161,9 +298,9 @@ var validate_inputs = function(req, res) {
 var date_format_rss = function(d) {
     var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    return _s.sprintf("%s, %02d %s %d %02d:%02d:%02d UTC", 
-        days[d.getUTCDay()], 
-        d.getUTCDate(), 
+    return _s.sprintf("%s, %02d %s %d %02d:%02d:%02d UTC",
+        days[d.getUTCDay()],
+        d.getUTCDate(),
         months[d.getUTCMonth()],
         d.getUTCFullYear(),
         d.getUTCHours(),
@@ -221,6 +358,7 @@ var calc_ts_range = function(day) {
     };
 }
 
+refresh_data();
 
-app.listen(process.env.VCAP_APP_PORT || 3000);
-console.log("Yay, started!");
+//app.listen(process.env.VCAP_APP_PORT || 3000);
+//console.log("Yay, started!");
