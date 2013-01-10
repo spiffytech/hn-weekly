@@ -333,7 +333,7 @@ var validate_inputs = function(req, res) {
 var date_format_rss = function(d) {
     var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    return _s.sprintf("%s, %02d %s %d %02d:%02d:%02d UTC",
+    return _s.sprintf("%s, %02d %s %d %02d:%02d:%02d GMT",
         days[d.getUTCDay()],
         d.getUTCDate(),
         months[d.getUTCMonth()],
