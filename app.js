@@ -72,7 +72,6 @@ app.get("/posts.json", function(req, res) {
         //console.log(posts);
         res.send({
             posts: posts,
-            point_range: calc_point_range(posts),
             num_posts: posts.length
         });
     });
@@ -95,16 +94,47 @@ app.get("/feed.xml", function(req, res) {
 });
 
 var do_stuff = function(req, callback) {
-    var day = req.query.day || new Date().getUTCDay();
-    var threshold = req.query.threshold || 25;
+    var day = parseInt(req.query.day) + 1 || new Date().getUTCDay() + 1;
+    var time_of_day = req.query.time_of_day || "midnight";
+    var threshold = parseInt(req.query.threshold) || 25;
 
     //var vals = cache.values();
     //for(var v in vals) console.log(JSON.stringify(vals[v]).length / (1024 * 1024));
 
-    refresh_data(day, 0, function(posts) {
-        var culled_posts = posts.slice(0, threshold);
-        callback(culled_posts);
-    });
+    step(
+        function() {
+            client.query(
+                "select * " +
+                "from post_uses " +
+                "join posts " +
+                "on posts.post_id=post_uses.post_id " +
+                "where " +
+                    "to_char(post_uses.use_date, 'D')::integer = $1 " +
+                    "and post_uses.use_tod = $2 " +
+                    "and use_date::date = (" +
+                        "select max(use_date::date) " +
+                        "from post_uses " +
+                        "where " +
+                            "to_char(post_uses.use_date, 'D')::integer = $1 " +
+                            "and post_uses.use_tod = $2 " +
+                    ") " +
+                "order by posts.points desc " +
+                "limit $3",
+                [day, time_of_day, threshold],
+                this
+            );
+        },
+        function(err, results) {
+            var posts = results.rows;
+            for(var post in posts) {
+                posts[post].permalink = "http://news.ycombinator.com/item?id=" + posts[post].post_id;
+                var d = new Date(posts[post].creation_date);
+
+                posts[post].rss_date = date_format_rss(d);
+            }
+            callback(posts);
+        }
+    );
 }
 
 var refresh_data = function(start_index, posts) {
@@ -136,10 +166,6 @@ var refresh_data = function(start_index, posts) {
             } else {
                 var not_stupid_posts = [];
                 for(var post in posts) {
-                    posts[post].item.permalink = "http://news.ycombinator.com/item?id=" + posts[post].item.id;
-                    var d = new Date(posts[post].item.create_ts);
-
-                    posts[post].item.rss_date = date_format_rss(d);
                     not_stupid_posts.push(posts[post].item);
                 }
                 setTimeout(
@@ -167,7 +193,6 @@ var refresh_data = function(start_index, posts) {
                             );
                         },
                         function(err, results) {
-                            console.log(post.id);
                             client.query(
                                 "insert into posts (" +
                                     "post_id, " +
@@ -198,7 +223,6 @@ var refresh_data = function(start_index, posts) {
         },
         function(err, results) {
             if(false) {
-                client.end();
                 return;
             }
 
@@ -215,7 +239,6 @@ var refresh_data = function(start_index, posts) {
                     );
                 },
                 function(err, results) {
-                    console.log(results);
                     if(results.rows[0].count == 0) {
                         client.query("insert into post_uses (select post_id, current_timestamp as use_date, $1 as use_tod from posts where age(creation_date) > '1 week')", ["bogus"], this);
                     } else {
@@ -253,11 +276,6 @@ var refresh_data = function(start_index, posts) {
                     console.log(results.rows);
 
                     client.query("END", this);
-                },
-                function(err, results) {
-                },
-                function() {
-                    client.end();
                 }
             );
         }
@@ -312,17 +330,8 @@ var date_format_rss = function(d) {
 var percentile_filter = function(posts, threshold) {
     var culled_post_count = Math.round(posts.length * (1-threshold) + .5);  // Not sure what the .5 is for, but that's what Wikipedia says should be in there
     var culled_posts = posts.slice(0, culled_post_count);
-    console.log(calc_point_range(culled_posts));
 
     return culled_posts;
-}
-
-
-var calc_point_range = function(posts) {
-    return {
-        min: + posts[posts.length-1].points,
-        max: posts[0].points
-    };
 }
 
 
@@ -358,7 +367,13 @@ var calc_ts_range = function(day) {
     };
 }
 
+process.on("SIGINT", function() {
+    console.warn("Cleaning up...");
+    client.end();
+    process.exit(0);
+});
+
 refresh_data();
 
-//app.listen(process.env.VCAP_APP_PORT || 3000);
-//console.log("Yay, started!");
+app.listen(process.env.VCAP_APP_PORT || 3000);
+console.log("Yay, started!");
