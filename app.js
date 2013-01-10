@@ -4,6 +4,19 @@ try {
     var conf = require("./conf.js");
 } catch(e) {}
 
+//var time = require("time");
+var cronJob = require("cron").CronJob;
+var stuff = new cronJob({
+    cronTime: "0 * * * *",
+    onTick: function() {
+        console.log("Cronning");
+        refresh_data();
+        prune_data();
+    },
+    timeZone: "UTC",
+    start: true
+});
+
 var GoogleAnalytics = require("ga");
 var ga = new GoogleAnalytics(conf.google_analytics_id, conf.fqdn);
 
@@ -69,7 +82,6 @@ app.get("/posts.json", function(req, res) {
     }
 
     do_stuff(req, function(posts) {
-        //console.log(posts);
         res.send({
             posts: posts,
             num_posts: posts.length
@@ -271,9 +283,9 @@ var refresh_data = function(start_index, posts) {
                     );
                 },
                 function(err, results) {
-                    console.log(err);
-                    console.log(results.rows.length);
-                    console.log(results.rows);
+                    //console.log(err);
+                    //console.log(results.rows.length);
+                    //console.log(results.rows);
 
                     client.query("END", this);
                 }
@@ -281,6 +293,11 @@ var refresh_data = function(start_index, posts) {
         }
     );
 };
+
+
+var prune_data = function() {
+    client.query("delete from posts where age(creation_date) > '2 weeks'");
+}
 
 
 var calc_time_of_day = function() {
