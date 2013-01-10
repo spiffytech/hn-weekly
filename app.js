@@ -157,88 +157,80 @@ var do_stuff = function(req, callback) {
     );
 }
 
-var refresh_data = function(start_index, posts) {
+var refresh_data = function() {
     var start_date = new Date();
     start_date.setTime(start_date.getTime() - 1000 * 60 * 60 * 24 * 14);
-    var max_posts = 300;
+    var max_posts = 1000;
     var limit = 100;
     var query_str = "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][create_ts]=[%s TO *]&filter[fields][type]=submission&pretty_print=true&sortby=points desc&limit=%d&start=%d";
-    if(start_index === undefined) {
-        start_index = 0;
-    }
-    if(posts === undefined) {
-        posts = [];
-    }
+    var start_index = 0;
 
     step(
         function() {
-            requester.get(_s.sprintf(query_str, start_date.toISOString(), limit, start_index), this);
-        },
-        function(body) {
-            var resp = JSON.parse(body);
-
-            for(var result in resp.results) {
-                if(!resp.results.hasOwnProperty(result)) continue;
-                posts.push(resp.results[result]);
-            }
-            if(start_index + limit < max_posts) {
-                refresh_data(start_index + limit, posts);
-            } else {
-                var not_stupid_posts = [];
-                for(var post in posts) {
-                    not_stupid_posts.push(posts[post].item);
-                }
-                setTimeout(
-                    (function(cb) {
-                        return function() {
-                            cb(not_stupid_posts);
-                        };
-                    })(this),
-                    0
-                );
-            }
-        },
-        function(posts) {
             var group = this.group();
-            for(var post in posts) {
-                if(!posts.hasOwnProperty(post)) continue;
-
-                (function(post, group) {
-                    step(
-                        function() {
-                            client.query(
-                                "update posts set points=$1, title=$2, num_comments=$3 where post_id=$4",
-                                [post.points, post.title, post.num_comments, new Date(post.create_ts)],
-                                this
-                            );
-                        },
-                        function(err, results) {
-                            client.query(
-                                "insert into posts (" +
-                                    "post_id, " +
-                                    "points, " +
-                                    "title, " +
-                                    "domain, " +
-                                    "username, " +
-                                    "url, " +
-                                    "num_comments, " +
-                                    "creation_date" +
-                                ") select $1, $2, $3, $4, $5, $6, $7, $8 where not exists (select 1 from posts where post_id=$1)",
-                                [
-                                    post.id,
-                                    post.points,
-                                    post.title,
-                                    post.domain,
-                                    post.username,
-                                    post.url,
-                                    post.num_comments,
-                                    new Date(post.create_ts)
-                                ],
-                                group
-                            );
+            while(start_index + limit <= max_posts) {
+                (function(group) {
+                    requester.get(
+                        _s.sprintf(
+                            query_str, start_date.toISOString(),
+                            limit,
+                            start_index
+                        ), 
+                        function(body) {
+                            group(null, body);
                         }
                     );
-                })(posts[post], group());
+                })(group());
+                start_index += limit;
+            }
+        },
+        function(err, posts_arrays) {
+            for(var posts_array in posts_arrays) {
+                var posts = posts_arrays[posts_array];
+                var resp = JSON.parse(posts);
+                posts = resp.results;
+
+                var group = this.group();
+                for(var post in posts) {
+                    if(!posts.hasOwnProperty(post)) continue;
+
+                    (function(post, group) {
+                        step(
+                            function() {
+                                client.query(
+                                    "update posts set points=$1, title=$2, num_comments=$3 where post_id=$4",
+                                    [post.points, post.title, post.num_comments, new Date(post.create_ts)],
+                                    this
+                                );
+                            },
+                            function(err, results) {
+                                client.query(
+                                    "insert into posts (" +
+                                        "post_id, " +
+                                        "points, " +
+                                        "title, " +
+                                        "domain, " +
+                                        "username, " +
+                                        "url, " +
+                                        "num_comments, " +
+                                        "creation_date" +
+                                    ") select $1, $2, $3, $4, $5, $6, $7, $8 where not exists (select 1 from posts where post_id=$1)",
+                                    [
+                                        post.id,
+                                        post.points,
+                                        post.title,
+                                        post.domain,
+                                        post.username,
+                                        post.url,
+                                        post.num_comments,
+                                        new Date(post.create_ts)
+                                    ],
+                                    group
+                                );
+                            }
+                        );
+                    })(posts[post].item, group());
+                }
             }
         },
         function(err, results) {
