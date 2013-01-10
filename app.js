@@ -2,7 +2,10 @@
 
 try {
     require("./conf.js");
-} catch(e) {}
+} catch(e) {
+    console.log("Can't find conf.js, cannot proceed. It can be procured from the git repo you got the app from.");
+    process.exit(1);
+}
 
 var _s = require("underscore.string");
 
