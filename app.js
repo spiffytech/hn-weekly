@@ -1,12 +1,26 @@
 "use strict";
 
 try {
-    var conf = require("./conf.js");
+    require("./conf.js");
 } catch(e) {}
 
-//var time = require("time");
+var _s = require("underscore.string");
+
+var GoogleAnalytics = require("ga");
+var ga = new GoogleAnalytics(process.env.hnweekly_google_analytics_id, process.env.hnweekly_fqdn);
+
+var pg = require("pg");
+var client = new pg.Client(_s.sprintf("postgres://%s:%s@%s:%s/%s", 
+    process.env.hnweekly_postgres_user,
+    process.env.hnweekly_postgres_password,
+    process.env.hnweekly_postgres_host,
+    process.env.hnweekly_postgres_port,
+    process.env.hnweekly_postgres_db
+));
+client.connect();
+
 var cronJob = require("cron").CronJob;
-var stuff = new cronJob({
+new cronJob({
     cronTime: "0 * * * *",
     onTick: function() {
         console.log("Cronning");
@@ -17,20 +31,13 @@ var stuff = new cronJob({
     start: true
 });
 
-var GoogleAnalytics = require("ga");
-var ga = new GoogleAnalytics(conf.google_analytics_id, conf.fqdn);
-
-var cons = require("consolidate");
-
-var pg = require("pg");
-var client = new pg.Client("postgres://postgres:postgres@localhost:5432/hnweekly");
-client.connect();
 
 var express = require("express");
 var app = express();
 app.use(express.bodyParser());
 app.use(express.cookieParser());
 app.use(express.logger());
+var cons = require("consolidate");
 app.engine("mustache", cons.mustache);
 app.set("view engine", "mustache");
 app.set("views", __dirname + "/templates");
@@ -48,8 +55,6 @@ var cache = LRU({
 
 var Requester = require("requester");
 var requester = new Requester();
-
-var _s = require("underscore.string");
 
 app.get("/", function(req, res) {
     res.render(
