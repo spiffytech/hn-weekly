@@ -150,7 +150,7 @@ var do_stuff = function(req, callback) {
                 posts[post].permalink = "http://news.ycombinator.com/item?id=" + posts[post].post_id;
                 var d = new Date(posts[post].creation_date);
 
-                posts[post].rss_date = date_format_rss(d);
+                posts[post].rss_date = d.toUTCString();
             }
             callback(posts);
         }
@@ -252,7 +252,7 @@ var refresh_data = function() {
                 },
                 function(err, results) {
                     if(results.rows[0].count == 0) {
-                        client.query("insert into post_uses (select post_id, current_timestamp as use_date, $1 as use_tod from posts where age(creation_date) > '1 week')", ["bogus"], this);
+                        backfill_data(this);
                     } else {
                         setTimeout(this, 0);
                     }
@@ -276,7 +276,7 @@ var refresh_data = function() {
                             "on posts.post_id=post_uses.post_id " +
                             "where post_uses.post_id is null " +
                             "order by posts.points desc " +
-                            "limit 25" +
+                            "limit 1000" +
                         ")",
                         [time_of_day, new Date().getUTCDay() + 1], // JS uses days starting at 0, postgres starting at 1
                         this
@@ -297,6 +297,42 @@ var refresh_data = function() {
 
 var prune_data = function() {
     client.query("delete from posts where age(creation_date) > '2 weeks'");
+}
+
+
+var backfill_data = function(cb) {
+    step(
+        function() {
+            client.query("select * from posts", this);
+        },
+        function(err, results) {
+            var posts = results.rows;
+            var group = this.group();
+            var dates = (function(posts) {
+                var dates = [];
+                for(var post in posts) {
+                    var d = new Date(posts[post].creation_date);
+                    var date_str = _s.sprintf("%d-%02d-%02d", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+                    if(dates.indexOf(date_str) === -1) {
+                        dates.push(date_str);
+                    }
+                }
+                return dates;
+            })(posts);
+
+            var tods = ["midnight", "morning", "noon", "evening"];
+            for(var date in dates) {
+                for(var tod in tods) {
+                    (function(d, tod, group) {
+                        client.query("insert into post_uses (select post_id, $1 as use_date, $2 as use_tod from posts where age($1, creation_date) between '0 seconds' and '1 week' order by points desc limit 1000)", [d, tod], group);
+                    })(new Date(dates[date]), tods[tod], group());
+                }
+            }
+        },
+        function(err, results) {
+            setTimeout(cb, 0);
+        }
+    );
 }
 
 
@@ -328,20 +364,6 @@ var validate_inputs = function(req, res) {
             throw "Day out of range";
         }
     }
-}
-
-var date_format_rss = function(d) {
-    var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    return _s.sprintf("%s, %02d %s %d %02d:%02d:%02d GMT",
-        days[d.getUTCDay()],
-        d.getUTCDate(),
-        months[d.getUTCMonth()],
-        d.getUTCFullYear(),
-        d.getUTCHours(),
-        d.getUTCMinutes(),
-        d.getUTCSeconds()
-    );
 }
 
 var percentile_filter = function(posts, threshold) {
