@@ -7,6 +7,8 @@ try {
     process.exit(1);
 }
 
+var hn = require("./lib/hn.js");
+
 var _s = require("underscore.string");
 
 var GoogleAnalytics = require("ga");
@@ -27,8 +29,8 @@ new cronJob({
     cronTime: "0 * * * *",
     onTick: function() {
         console.log("Cronning");
-        refresh_data();
-        prune_data();
+        hn.refresh_data();
+        hn.prune_data();
     },
     timeZone: "UTC",
     start: true
@@ -55,9 +57,6 @@ var cache = LRU({
     length: function(val) {return JSON.stringify(val).length;},
     maxAge: cache_age
 });
-
-var Requester = require("requester");
-var requester = new Requester();
 
 app.get("/", function(req, res) {
     res.render(
@@ -157,198 +156,6 @@ var do_stuff = function(req, callback) {
     );
 }
 
-var refresh_data = function() {
-    var start_date = new Date();
-    start_date.setTime(start_date.getTime() - 1000 * 60 * 60 * 24 * 14);
-    var max_posts = 1000;
-    var limit = 100;
-    var query_str = "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][create_ts]=[%s TO *]&filter[fields][type]=submission&pretty_print=true&sortby=points desc&limit=%d&start=%d";
-    var start_index = 0;
-
-    step(
-        function() {
-            var group = this.group();
-            while(start_index + limit <= max_posts) {
-                (function(group) {
-                    requester.get(
-                        _s.sprintf(
-                            query_str, start_date.toISOString(),
-                            limit,
-                            start_index
-                        ), 
-                        function(body) {
-                            group(null, body);
-                        }
-                    );
-                })(group());
-                start_index += limit;
-            }
-        },
-        function(err, posts_arrays) {
-            for(var posts_array in posts_arrays) {
-                var posts = posts_arrays[posts_array];
-                var resp = JSON.parse(posts);
-                posts = resp.results;
-
-                var group = this.group();
-                for(var post in posts) {
-                    if(!posts.hasOwnProperty(post)) continue;
-
-                    (function(post, group) {
-                        step(
-                            function() {
-                                client.query(
-                                    "update posts set points=$1, title=$2, num_comments=$3 where post_id=$4",
-                                    [post.points, post.title, post.num_comments, new Date(post.create_ts)],
-                                    this
-                                );
-                            },
-                            function(err, results) {
-                                client.query(
-                                    "insert into posts (" +
-                                        "post_id, " +
-                                        "points, " +
-                                        "title, " +
-                                        "domain, " +
-                                        "username, " +
-                                        "url, " +
-                                        "num_comments, " +
-                                        "creation_date" +
-                                    ") select $1, $2, $3, $4, $5, $6, $7, $8 where not exists (select 1 from posts where post_id=$1)",
-                                    [
-                                        post.id,
-                                        post.points,
-                                        post.title,
-                                        post.domain,
-                                        post.username,
-                                        post.url,
-                                        post.num_comments,
-                                        new Date(post.create_ts)
-                                    ],
-                                    group
-                                );
-                            }
-                        );
-                    })(posts[post].item, group());
-                }
-            }
-        },
-        function(err, results) {
-            if(false) {
-                return;
-            }
-
-            step(
-                function() {
-                    client.query("BEGIN", this);
-                },
-                function(err, results) {
-                    var time_of_day = calc_time_of_day();
-
-                    client.query(
-                        "select count(*) from post_uses",
-                        this
-                    );
-                },
-                function(err, results) {
-                    if(results.rows[0].count == 0) {
-                        backfill_data(this);
-                    } else {
-                        setTimeout(this, 0);
-                    }
-                },
-                function(err, results) {
-                    var time_of_day = calc_time_of_day();
-                    client.query(
-                        "insert into post_uses (" +
-                            "select " +
-                                "posts.post_id, " +
-                                "current_timestamp as use_date, " +
-                                "$1 as use_tod " +
-                            "from posts " +
-                            "left outer join (" +
-                                "select * from post_uses " +
-                                "where " +
-                                    "use_tod = $1 and " +
-                                    "to_char(use_date, 'D')::integer = $2 " +
-                                    "and use_tod != 'bogus'" +
-                            ") as post_uses " +
-                            "on posts.post_id=post_uses.post_id " +
-                            "where post_uses.post_id is null " +
-                            "order by posts.points desc " +
-                            "limit 1000" +
-                        ")",
-                        [time_of_day, new Date().getUTCDay() + 1], // JS uses days starting at 0, postgres starting at 1
-                        this
-                    );
-                },
-                function(err, results) {
-                    //console.log(err);
-                    //console.log(results.rows.length);
-                    //console.log(results.rows);
-
-                    client.query("END", this);
-                }
-            );
-        }
-    );
-};
-
-
-var prune_data = function() {
-    client.query("delete from posts where age(creation_date) > '2 weeks'");
-}
-
-
-var backfill_data = function(cb) {
-    step(
-        function() {
-            client.query("select * from posts", this);
-        },
-        function(err, results) {
-            var posts = results.rows;
-            var group = this.group();
-            var dates = (function(posts) {
-                var dates = [];
-                for(var post in posts) {
-                    var d = new Date(posts[post].creation_date);
-                    var date_str = _s.sprintf("%d-%02d-%02d", d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
-                    if(dates.indexOf(date_str) === -1) {
-                        dates.push(date_str);
-                    }
-                }
-                return dates;
-            })(posts);
-
-            var tods = ["midnight", "morning", "noon", "evening"];
-            for(var date in dates) {
-                for(var tod in tods) {
-                    (function(d, tod, group) {
-                        client.query("insert into post_uses (select post_id, $1 as use_date, $2 as use_tod from posts where age($1, creation_date) between '0 seconds' and '1 week' order by points desc limit 1000)", [d, tod], group);
-                    })(new Date(dates[date]), tods[tod], group());
-                }
-            }
-        },
-        function(err, results) {
-            setTimeout(cb, 0);
-        }
-    );
-}
-
-
-var calc_time_of_day = function() {
-    var hour = new Date().getUTCHours();
-    if(hour < 6) {
-        return "midnight";
-    } else if(hour < 12) {
-        return "morning";
-    } else if(hour < 18) {
-        return "noon";
-    } else {
-        return "evening";
-    }
-}
-
 
 var validate_inputs = function(req, res) {
     if(req.query.threshold) {
@@ -366,45 +173,6 @@ var validate_inputs = function(req, res) {
     }
 }
 
-var percentile_filter = function(posts, threshold) {
-    var culled_post_count = Math.round(posts.length * (1-threshold) + .5);  // Not sure what the .5 is for, but that's what Wikipedia says should be in there
-    var culled_posts = posts.slice(0, culled_post_count);
-
-    return culled_posts;
-}
-
-
-var within_cache_intelval = function(day) {
-    var now = new Date();
-    var start = new Date();
-    start.setUTCHours(0);
-    start.setUTCMinutes(0);
-    start.setUTCMilliseconds(0);
-    start.setTime(start.getTime() + 1000 * 60 * 60 * 24);  // Forces checks for e.g., day 2 while on day 2, to check /next week's/ day 2 and not the already-past today-at-midnight
-    while(start.getUTCDay() != day) {
-        start.setTime(start.getTime() + 1000 * 60 * 60 * 24);
-    }
-    return (start - now) > cache_age;
-}
-
-
-var calc_ts_range = function(day) {
-    var end = new Date();
-    end.setUTCHours(0);
-    end.setUTCMinutes(0);
-    end.setUTCMilliseconds(0);
-    while(end.getUTCDay() != day) {
-        end.setTime(end.getTime() - 1000 * 60 * 60 * 24);
-    }
-
-    var start = new Date();
-    start.setTime(end.getTime() - 1000 * 60 * 60 * 24 * 7);
-
-    return {
-        start: start.toISOString(),
-        end: end.toISOString()
-    };
-}
 
 process.on("SIGINT", function() {
     console.warn("Cleaning up...");
@@ -412,7 +180,7 @@ process.on("SIGINT", function() {
     process.exit(0);
 });
 
-refresh_data();
+hn.refresh_data();
 
 app.listen(process.env.VCAP_APP_PORT || 3000);
 console.log("Yay, started!");
