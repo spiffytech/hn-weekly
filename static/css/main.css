@@ -43,6 +43,7 @@ body footer .navbar{
 }
 
 body {
+    /* Image from Matthew Clark Photography & Design, https://www.flickr.com/photos/digital_rebel_xt/72224228/ */
     background: url(/img/bg1.jpg) no-repeat center center fixed; 
     background-size: cover;
 }
