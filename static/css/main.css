@@ -8,12 +8,28 @@
     line-height: 65px;
 }
 
-body footer {
+.container {
+    background-color:rgba(0,0,0,0.7);
+    padding: 1em 3em;
+}
+
+body {
+    color: #C1CDCD;
+}
+
+body footer .navbar{
+    margin-bottom: 0px;
+/*
     min-height: 40px;
     padding-top: 1em;
     padding-left: 1em;
     border-top: 1px solid #E5E5E5;
-    background-color: whiteSmoke;
+    */
+    /*background-color: whiteSmoke;*/
+    /*
+    background-color: transparent;
+    color: #999;
+    */
 }
 
 .button-desc {
@@ -24,4 +40,9 @@ body footer {
 .post-domain {
     font-size: 50%;
     color: #777;
+}
+
+body {
+    background: url(/img/bg1.jpg) no-repeat center center fixed; 
+    background-size: cover;
 }

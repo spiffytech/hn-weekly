@@ -1,6 +1,6 @@
-drop table db_upgrades;
-drop table post_uses;
-drop table posts;
+drop table if exists db_upgrades;
+drop table if exists post_uses;
+drop table if exists posts;
 
 create table db_upgrades (version integer primary key, upgrade_date timestamp);
 create table posts (post_id integer primary key, points integer, title text, domain text, username text, url text, num_comments integer, creation_date timestamp);

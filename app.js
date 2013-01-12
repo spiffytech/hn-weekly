@@ -61,10 +61,13 @@ var cache = LRU({
 app.get("/", function(req, res) {
     res.render(
         "index",
-        {partials: {
-            header: "header",
-            footer: "footer"
-        }}
+        {
+            ga_tracking_code: process.env.hnweekly_google_analytics_id,
+            partials: {
+                header: "header",
+                footer: "footer"
+            }
+        }
     );
 });
 
@@ -73,6 +76,7 @@ app.get("/about", function(req, res) {
         "about",
         {
             title: "About - ",
+            ga_tracking_code: process.env.hnweekly_google_analytics_id,
             partials: {
                 header: "header",
                 footer: "footer"
@@ -82,6 +86,7 @@ app.get("/about", function(req, res) {
 });
 
 app.get("/posts.json", function(req, res) {
+    ga.trackPage(req.url);
     try {
         validate_inputs(req, res);
     } catch(e) {
@@ -97,6 +102,7 @@ app.get("/posts.json", function(req, res) {
 });
 
 app.get("/feed.xml", function(req, res) {
+    ga.trackPage(req.url);
     try {
         validate_inputs(req, res);
     } catch(e) {
