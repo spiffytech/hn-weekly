@@ -1,40 +1,35 @@
-.brand a {
-    font-weight: bold;
-    font-size: 38.5px;  /* Stupid Bootstrap seems to specify this in px, not ems, so I don't have a relative size to reset to */
-    color: #777;
+article p {
+    font-size: 13px;
 }
-
-.navbar .nav > li > a, .navbar > span {
-    line-height: 65px;
-}
-
-.container {
-    background-color:rgba(0,0,0,0.7);
-    padding: 1em 3em;
+article h3 {
+    font-size: 27px;
 }
 
 body {
+    /* Image from Matthew Clark Photography & Design, https://www.flickr.com/photos/digital_rebel_xt/72224228/ */
+    background: url(/img/bg1.jpg) no-repeat center center fixed; 
+    background-size: cover;
     color: #C1CDCD;
-}
-
-body footer .navbar{
-    margin-bottom: 0px;
-/*
-    min-height: 40px;
-    padding-top: 1em;
-    padding-left: 1em;
-    border-top: 1px solid #E5E5E5;
-    */
-    /*background-color: whiteSmoke;*/
-    /*
-    background-color: transparent;
-    color: #999;
-    */
 }
 
 .button-desc {
     font-style: italic;
     text-align: center;
+    height: 3em;
+}
+
+.container {
+    background-color:rgba(0,0,0,0.8);
+    padding: 1em 3em;
+}
+
+.day-chooser, .threshold-chooser, .tod-chooser {
+    width: 100%;
+}
+
+#page_title {
+    font-size: 38.5px !important;
+    color: #777;
 }
 
 .post-domain {
@@ -42,8 +37,6 @@ body footer .navbar{
     color: #777;
 }
 
-body {
-    /* Image from Matthew Clark Photography & Design, https://www.flickr.com/photos/digital_rebel_xt/72224228/ */
-    background: url(/img/bg1.jpg) no-repeat center center fixed; 
-    background-size: cover;
+.post-title {
+    margin-bottom: 0px;
 }

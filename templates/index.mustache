@@ -6,48 +6,75 @@
     }
 </style>
 
-<div class="row-fluid">
-    <div class="span4 offset2">
-        <p class="button-desc">How many posts you want to see</p>
-        <button class="threshold-chooser btn" data-threshold="10">Top 10</button><br>
-        <button class="threshold-chooser btn" data-threshold="25">Top 25</button><br>
-        <button class="threshold-chooser btn" data-threshold="50">Top 50</button><br>
-        <button class="threshold-chooser btn" data-threshold="100">Top 100</button><br>
-        <button class="threshold-chooser btn" data-threshold="300">Top 300</button><br>
+<div class="row">
+    <div class="ten columns centered">
+        <div class="four columns">
+        </div>
+        <div class="four columns">
+        </div>
+        <div class="four columns">
+        </div>
     </div>
+</div>
+<div class="row">
+    <div class="ten columns centered">
+        <div class="four columns">
+            <p class="button-desc">How many posts you want to see</p>
+            <button class="threshold-chooser button secondary" data-threshold="10">Top 10</button><br>
+            <button class="threshold-chooser button secondary" data-threshold="25">Top 25</button><br>
+            <button class="threshold-chooser button secondary" data-threshold="50">Top 50</button><br>
+            <button class="threshold-chooser button secondary" data-threshold="100">Top 100</button><br>
+            <button class="threshold-chooser button secondary" data-threshold="300">Top 300</button><br>
+        </div>
 
-    <div class="span4">
-        <p class="button-desc">Posts will be delivered on midnight UTC of this day</p>
-        <button class="day-chooser btn" data-day="0">Sunday</button><br>
-        <button class="day-chooser btn" data-day="1">Monday</button><br>
-        <button class="day-chooser btn" data-day="2">Tuesday</button><br>
-        <button class="day-chooser btn" data-day="3">Wednesday</button><br>
-        <button class="day-chooser btn" data-day="4">Thursday</button><br>
-        <button class="day-chooser btn" data-day="5">Friday</button><br>
-        <button class="day-chooser btn" data-day="6">Saturday</button><br>
+        <hr class="show-for-small">
+
+        <div class="four columns">
+            <p class="button-desc">Posts will be delivered on midnight UTC of this day</p>
+            <button class="day-chooser button secondary" data-day="0">Sunday</button><br>
+            <button class="day-chooser button secondary" data-day="1">Monday</button><br>
+            <button class="day-chooser button secondary" data-day="2">Tuesday</button><br>
+            <button class="day-chooser button secondary" data-day="3">Wednesday</button><br>
+            <button class="day-chooser button secondary" data-day="4">Thursday</button><br>
+            <button class="day-chooser button secondary" data-day="5">Friday</button><br>
+            <button class="day-chooser button secondary" data-day="6">Saturday</button><br>
+        </div>
+
+        <hr class="show-for-small">
+
+        <div class="four columns">
+            <p class="button-desc">Time of day (UTC) your posts will be delivered</p>
+            <button class="tod-chooser button secondary" data-tod="midnight">Midnight</button><br>
+            <button class="tod-chooser button secondary" data-tod="morning">Morning</button><br>
+            <button class="tod-chooser button secondary" data-tod="noon">Noon</button><br>
+            <button class="tod-chooser button secondary" data-tod="evening">Evening</button><br>
+        </div>
     </div>
 </div>
 
 <hr>
 
-<div id="posts" class="row-fluid"></div>
+<div id="posts" class="row"></div>
 
 
 <script type="text/javascript">
     var fetch_posts = function() {
         var threshold = localStorage.getItem("threshold");
         var day = localStorage.getItem("day");
+        var tod = localStorage.getItem("tod");
 
         jQuery.get(
             "/posts.json", 
             {
                 threshold: threshold,
-                day: day
+                day: day,
+                tod: tod
             },
             function(data) {
                 data.domain = window.location.host;
                 data.threshold = threshold;
                 data.day = day;
+                data.tod = tod;
                 var posts_html = ich.posts_tpl(data);
                 jQuery("#posts").html(posts_html);
             }
@@ -62,7 +89,7 @@
                 jQuery(this).attr("data-threshold") === threshold
                 || !threshold && jQuery(this).attr("data-threshold") == 25
             ) {
-                jQuery(this).addClass("btn-primary");
+                jQuery(this).removeClass("secondary");
             }
         });
 
@@ -72,7 +99,17 @@
                 jQuery(this).attr("data-day") === day
                 || (!day && jQuery(this).attr("data-day") == new Date().getUTCDay())
             ) {
-                jQuery(this).addClass("btn-primary");
+                jQuery(this).removeClass("secondary");
+            }
+        });
+
+        var nod = localStorage.getItem("tod");
+        jQuery(".tod-chooser").each(function() {
+            if(
+                jQuery(this).attr("data-tod") === nod
+                || (!nod && jQuery(this).attr("data-tod") == "midnight")
+            ) {
+                jQuery(this).removeClass("secondary");
             }
         });
 
@@ -80,20 +117,29 @@
 
         jQuery(".threshold-chooser").on("click", function() {
             jQuery(".threshold-chooser").each(function() {
-                jQuery(this).removeClass("btn-primary");
+                jQuery(this).addClass("secondary");
             });
-            jQuery(this).addClass("btn-primary");
+            jQuery(this).removeClass("secondary");
             var threshold = jQuery(this).attr("data-threshold");
             localStorage.setItem("threshold", threshold);
             fetch_posts();
         });
         jQuery(".day-chooser").on("click", function() {
             jQuery(".day-chooser").each(function() {
-                jQuery(this).removeClass("btn-primary");
+                jQuery(this).addClass("secondary");
             });
-            jQuery(this).addClass("btn-primary");
+            jQuery(this).removeClass("secondary");
             var day = jQuery(this).attr("data-day");
             localStorage.setItem("day", day);
+            fetch_posts();
+        });
+        jQuery(".tod-chooser").on("click", function() {
+            jQuery(".tod-chooser").each(function() {
+                jQuery(this).addClass("secondary");
+            });
+            jQuery(this).removeClass("secondary");
+            var tod = jQuery(this).attr("data-tod");
+            localStorage.setItem("tod", tod);
             fetch_posts();
         });
     });
@@ -102,8 +148,8 @@
 {{=|a| |a|=}}
 <script id="posts_tpl" type="text/html">
     <p>
-        <img src="/img/rss.svg" width="20px"> <a href="http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}">
-            http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}
+        <img src="/img/rss.svg" align="absmiddle" width="20px"> <a href="http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}">
+            http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}
         </a>
     </p>
 
@@ -113,7 +159,7 @@
     {{#posts}}
         <article>
             <header>
-                <h3><a href="{{url}}">{{title}}</a> - <span class="post-domain">{{domain}}</span></h3>
+                <h3 class="post-title"><a href="{{url}}">{{title}}</a> - <span class="post-domain">{{domain}}</span></h3>
             </header>
             <p>
                 {{points}} Points 
