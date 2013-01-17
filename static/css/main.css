@@ -19,7 +19,7 @@ body {
 }
 
 .container {
-    background-color:rgba(0,0,0,0.8);
+    background-color:rgba(0,0,0,0.85);
     padding: 1em 3em;
 }
 
@@ -29,7 +29,7 @@ body {
 
 #page_title {
     font-size: 38.5px !important;
-    color: #777;
+    color: #C1CDCD;
 }
 
 .post-domain {

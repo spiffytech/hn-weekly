@@ -30,7 +30,7 @@
         <hr class="show-for-small">
 
         <div class="four columns">
-            <p class="button-desc">Posts will be delivered on midnight UTC of this day</p>
+            <p class="button-desc">Day (UTC) posts will be delivered</p>
             <button class="day-chooser button secondary" data-day="0">Sunday</button><br>
             <button class="day-chooser button secondary" data-day="1">Monday</button><br>
             <button class="day-chooser button secondary" data-day="2">Tuesday</button><br>
@@ -68,7 +68,7 @@
             {
                 threshold: threshold,
                 day: day,
-                tod: tod
+                time_of_day: tod
             },
             function(data) {
                 data.domain = window.location.host;
@@ -83,6 +83,14 @@
     }
 
     jQuery(document).ready(function() {
+        /* Dolphin browser hates background-attachment: fixed
+        But there's no way to identify the Dolphin browser specifically
+        */
+        if(navigator.userAgent.match(/Android/)) {
+            jQuery("body").css("background-attachment", "scroll");
+        }
+
+
         var threshold = localStorage.getItem("threshold");
         jQuery(".threshold-chooser").each(function() {
             if(
@@ -147,6 +155,9 @@
 
 {{=|a| |a|=}}
 <script id="posts_tpl" type="text/html">
+    {{#date_range}}
+        <p>Below are the best posts from the week of {{start}} to {{end}} UTC</p>
+    {{/date_range}}
     <p>
         <img src="/img/rss.svg" align="absmiddle" width="20px"> <a href="http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}">
             http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}

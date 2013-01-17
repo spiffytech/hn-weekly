@@ -10,6 +10,7 @@ try {
 var hn = require("./lib/hn.js");
 
 var _s = require("underscore.string");
+require("date-utils");
 
 var GoogleAnalytics = require("ga");
 var ga = new GoogleAnalytics(process.env.hnweekly_google_analytics_id, process.env.hnweekly_fqdn);
@@ -93,10 +94,20 @@ app.get("/posts.json", function(req, res) {
         return;
     }
 
-    do_stuff(req, function(posts) {
+    var params = get_parameters(req);
+    var date_range = calc_ts_range(params.day, params.time_of_day);
+    date_range = {
+        start: date_range.start.toFormat("DDDD, MMMM D HH24:MI"),
+        end: date_range.end.toFormat("DDDD, MMMM D HH24:MI"),
+    }
+
+
+    do_stuff(params.day, params.time_of_day, params.threshold, function(posts) {
+
         res.send({
             posts: posts,
-            num_posts: posts.length
+            num_posts: posts.length,
+            date_range: date_range
         });
     });
 });
@@ -109,7 +120,8 @@ app.get("/feed.xml", function(req, res) {
         return;
     }
 
-    do_stuff(req, function(posts) {
+    var params = get_parameters(req);
+    do_stuff(params.day, params.time_of_day, params.threshold, function(posts) {
         res.type("application/rss+xml");
         res.render(
             "feed",
@@ -118,11 +130,7 @@ app.get("/feed.xml", function(req, res) {
     });
 });
 
-var do_stuff = function(req, callback) {
-    var day = parseInt(req.query.day) + 1 || new Date().getUTCDay() + 1;
-    var time_of_day = req.query.time_of_day || "midnight";
-    var threshold = parseInt(req.query.threshold) || 25;
-
+var do_stuff = function(day, time_of_day, threshold, callback) {
     //var vals = cache.values();
     //for(var v in vals) console.log(JSON.stringify(vals[v]).length / (1024 * 1024));
 
@@ -177,6 +185,45 @@ var validate_inputs = function(req, res) {
             throw "Day out of range";
         }
     }
+
+    if(req.query.tod) {
+        if(["midnight", "morning", "noon", "evening"].indexOf === -1) {
+            res.send(404, {error: "Time of day out of range"});
+            throw "Time of day out of range";
+        }
+    }
+}
+
+
+var get_parameters = function(req) {
+    var threshold = parseInt(req.query.threshold) || 25;
+    var day = parseInt(req.query.day) + 1 || new Date().getUTCDay() + 1;
+    var time_of_day = req.query.time_of_day || "midnight";
+
+    return {
+        day: day,
+        time_of_day: time_of_day,
+        threshold: threshold,
+    };
+}
+
+var calc_ts_range = function(day, time_of_day) {
+    var end = new Date();
+    end.setUTCHours(0);
+    end.setUTCMinutes(0);
+    end.setUTCSeconds(0);
+    end.setUTCMilliseconds(0);
+    while(end.getUTCDay() != day) {
+        end.setTime(end.getTime() - 1000 * 60 * 60 * 24);
+    }
+
+    var start = new Date();
+    start.setTime(end.getTime() - 1000 * 60 * 60 * 24 * 7);
+
+    return {
+        start: start,
+        end: end
+    };
 }
 
 
