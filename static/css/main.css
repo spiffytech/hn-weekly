@@ -27,15 +27,27 @@ body {
     width: 100%;
 }
 
+dd {
+    margin-left: 2em;
+}
+
+dt {
+    font-weight: bold;
+}
+
 footer {
     padding-top: 1em;
     background-color: #222;
     padding-bottom: 1em;
 }
 
+h1, h2, h3, h4, h5, h6 {
+    color: #C1CDCD;
+}
+
 #page_title {
     font-size: 38.5px !important;
-    color: #C1CDCD;
+    color: 
 }
 
 .post-domain {

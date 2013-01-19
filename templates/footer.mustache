@@ -21,7 +21,14 @@
     <script>
         jQuery(document).ready(function() {
             $(document).foundationTopBar();
-        });
+
+            /* Dolphin browser hates background-attachment: fixed
+            But there's no way to identify the Dolphin browser specifically
+            */
+            if(navigator.userAgent.match(/Android/)) {
+                jQuery("body").css("background-attachment", "scroll");
+            }
+            });
     </script>
 </body>
 </html>

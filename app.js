@@ -99,8 +99,8 @@ app.get("/posts.json", function(req, res) {
     var params = get_parameters(req);
     var date_range = calc_ts_range(params.day, params.time_of_day);
     date_range = {
-        start: date_range.start.toFormat("DDDD, MMMM D HH24:MI"),
-        end: date_range.end.toFormat("DDDD, MMMM D HH24:MI"),
+        start: date_range.start.toUTCString(),
+        end: date_range.end.toUTCString(),
     }
 
 
@@ -211,7 +211,7 @@ var get_parameters = function(req) {
 
 var calc_ts_range = function(day, time_of_day) {
     var end = new Date();
-    end.setUTCHours(0);
+    end.setUTCHours(hn.hour_from_time_of_day(time_of_day));
     end.setUTCMinutes(0);
     end.setUTCSeconds(0);
     end.setUTCMilliseconds(0);

@@ -71,7 +71,7 @@
                 time_of_day: tod
             },
             function(data) {
-                data.domain = window.location.host;
+                data.host = window.location.host;
                 data.threshold = threshold;
                 data.day = day;
                 data.tod = tod;
@@ -83,14 +83,6 @@
     }
 
     jQuery(document).ready(function() {
-        /* Dolphin browser hates background-attachment: fixed
-        But there's no way to identify the Dolphin browser specifically
-        */
-        if(navigator.userAgent.match(/Android/)) {
-            jQuery("body").css("background-attachment", "scroll");
-        }
-
-
         var threshold = localStorage.getItem("threshold");
         jQuery(".threshold-chooser").each(function() {
             if(
@@ -156,11 +148,11 @@
 {{=|a| |a|=}}
 <script id="posts_tpl" type="text/html">
     {{#date_range}}
-        <p>Below are the best posts from the week of {{start}} to {{end}} UTC</p>
+        <p>Below are the best posts from the week of {{start}} to {{end}}</p>
     {{/date_range}}
     <p>
-        <img src="/img/rss.svg" align="absmiddle" width="20px"> <a href="http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}">
-            http://{{domain}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}
+        <img src="/img/rss.svg" align="absmiddle" width="20px"> <a href="http://{{host}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}">
+            http://{{host}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}
         </a>
     </p>
 
