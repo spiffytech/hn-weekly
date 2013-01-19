@@ -27,6 +27,12 @@ body {
     width: 100%;
 }
 
+footer {
+    padding-top: 1em;
+    background-color: #222;
+    padding-bottom: 1em;
+}
+
 #page_title {
     font-size: 38.5px !important;
     color: #C1CDCD;

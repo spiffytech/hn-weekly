@@ -64,6 +64,7 @@ app.get("/", function(req, res) {
         "index",
         {
             ga_tracking_code: process.env.hnweekly_google_analytics_id,
+            contact_address: process.env.hnweekly_contact_address,
             partials: {
                 header: "header",
                 footer: "footer"
@@ -78,6 +79,7 @@ app.get("/about", function(req, res) {
         {
             title: "About - ",
             ga_tracking_code: process.env.hnweekly_google_analytics_id,
+            contact_address: process.env.hnweekly_contact_address,
             partials: {
                 header: "header",
                 footer: "footer"
@@ -213,7 +215,7 @@ var calc_ts_range = function(day, time_of_day) {
     end.setUTCMinutes(0);
     end.setUTCSeconds(0);
     end.setUTCMilliseconds(0);
-    while(end.getUTCDay() != day) {
+    while(end.getUTCDay() != day-1) {  // -1 is because the day is +1'd by get_parameters() before being passed here
         end.setTime(end.getTime() - 1000 * 60 * 60 * 24);
     }
 
@@ -235,5 +237,5 @@ process.on("SIGINT", function() {
 
 hn.refresh_data();
 
-app.listen(process.env.VCAP_APP_PORT || 3000);
+app.listen(process.env.VCAP_APP_PORT || 4000);
 console.log("Yay, started!");

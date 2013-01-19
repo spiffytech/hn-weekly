@@ -1,11 +1,9 @@
     </div> <!-- /container -->
 
-    <footer id="#copyright">
-        <div class="navbar navbar-inverse">
-            <div class="navbar-inner">
-                <p>Open source on <a href="https://github.com/spiffytech/hn-weekly">Github</a></p>
-            </div>
-        </div>
+    <footer>
+        <p>Open source on <a href="https://github.com/spiffytech/hn-weekly">Github</a></p>
+
+        <p><a href="mailto:{{contact_address}}">Email me</a></p>
     </footer>
 
     <script src="js/zurb/foundation.min.js"></script>
@@ -18,6 +16,12 @@
         (function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
         g.src=('https:'==location.protocol?'//ssl':'//www')+'.google-analytics.com/ga.js';
         s.parentNode.insertBefore(g,s)}(document,'script'));
+    </script>
+
+    <script>
+        jQuery(document).ready(function() {
+            $(document).foundationTopBar();
+        });
     </script>
 </body>
 </html>
