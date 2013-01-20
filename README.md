@@ -3,7 +3,7 @@ HN Weekly
 
 Weekly digest of the best of Hacker News from the past week.
 
-Well, "past week" is a little bit fuzzy. Technically, the algorithm is "the top stories from sometime in the past two weeks that weren't included in last week's roundup", which works out *almost* the same. The difference is this ensures that something submitted just a few minutes before the weekly cutoff, when it only has a few points, gets shown the next week once it's gotten tons of points.
+Well, "past week" is a little bit fuzzy. Technically, the algorithm is "the top stories submitted sometime in the past two weeks that weren't included in last week's roundup", which works out *almost* the same. The difference is this ensures that something submitted just a few minutes before the weekly cutoff, when it only has a few points, gets shown the next week once it's gotten tons of points.
 
 
 
