@@ -47,7 +47,8 @@ step(
 
             if(this_file.version <= max_version) {
                 console.log("here");
-                setTimeout(cb, 0);
+                db_versions.shift();
+                setTimeout(upgrade_version, 0, db_versions, cb);
                 return;
             }
 
