@@ -23,7 +23,7 @@ body {
     padding: 1em 3em;
 }
 
-.day-chooser, .threshold-chooser, .tod-chooser {
+.day-chooser, .threshold-chooser, .hour-chooser {
     width: 100%;
 }
 

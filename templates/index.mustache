@@ -44,10 +44,10 @@
 
         <div class="four columns">
             <p class="button-desc">Time of day (UTC) your posts will be delivered</p>
-            <button class="tod-chooser button secondary" data-tod="midnight">Midnight</button><br>
-            <button class="tod-chooser button secondary" data-tod="morning">Morning</button><br>
-            <button class="tod-chooser button secondary" data-tod="noon">Noon</button><br>
-            <button class="tod-chooser button secondary" data-tod="evening">Evening</button><br>
+            <button class="hour-chooser button secondary" data-hour="00">Midnight</button><br>
+            <button class="hour-chooser button secondary" data-hour="06">Morning</button><br>
+            <button class="hour-chooser button secondary" data-hour="12">Noon</button><br>
+            <button class="hour-chooser button secondary" data-hour="18">Evening</button><br>
         </div>
     </div>
 </div>
@@ -61,20 +61,20 @@
     var fetch_posts = function() {
         var threshold = localStorage.getItem("threshold");
         var day = localStorage.getItem("day");
-        var tod = localStorage.getItem("tod");
+        var hour = localStorage.getItem("hour");
 
         jQuery.get(
             "/posts.json", 
             {
                 threshold: threshold,
                 day: day,
-                time_of_day: tod
+                hour: hour
             },
             function(data) {
                 data.host = window.location.host;
                 data.threshold = threshold;
                 data.day = day;
-                data.tod = tod;
+                data.hour = hour;
                 var posts_html = ich.posts_tpl(data);
                 jQuery("#posts").html(posts_html);
             }
@@ -103,11 +103,11 @@
             }
         });
 
-        var nod = localStorage.getItem("tod");
-        jQuery(".tod-chooser").each(function() {
+        var nod = localStorage.getItem("hour");
+        jQuery(".hour-chooser").each(function() {
             if(
-                jQuery(this).attr("data-tod") === nod
-                || (!nod && jQuery(this).attr("data-tod") == "midnight")
+                jQuery(this).attr("data-hour") === nod
+                || (!nod && jQuery(this).attr("data-hour") == "00")
             ) {
                 jQuery(this).removeClass("secondary");
             }
@@ -133,13 +133,13 @@
             localStorage.setItem("day", day);
             fetch_posts();
         });
-        jQuery(".tod-chooser").on("click", function() {
-            jQuery(".tod-chooser").each(function() {
+        jQuery(".hour-chooser").on("click", function() {
+            jQuery(".hour-chooser").each(function() {
                 jQuery(this).addClass("secondary");
             });
             jQuery(this).removeClass("secondary");
-            var tod = jQuery(this).attr("data-tod");
-            localStorage.setItem("tod", tod);
+            var hour = jQuery(this).attr("data-hour");
+            localStorage.setItem("hour", hour);
             fetch_posts();
         });
     });
@@ -151,8 +151,8 @@
         <p>Below are the best posts from the week of {{start}} to {{end}}</p>
     {{/date_range}}
     <p>
-        <img src="/img/rss.svg" align="absmiddle" width="20px"> <a href="http://{{host}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}">
-            http://{{host}}/feed.xml?threshold={{threshold}}&day={{day}}&tod={{tod}}
+        <img src="/img/rss.svg" align="absmiddle" width="20px"> <a href="http://{{host}}/feed.xml?threshold={{threshold}}&day={{day}}&hour={{hour}}">
+            http://{{host}}/feed.xml?threshold={{threshold}}&day={{day}}&hour={{hour}}
         </a>
     </p>
 

@@ -97,14 +97,14 @@ app.get("/posts.json", function(req, res) {
     }
 
     var params = get_parameters(req);
-    var date_range = calc_ts_range(params.day, params.time_of_day);
+    var date_range = calc_ts_range(params.day, params.hour);
     date_range = {
         start: date_range.start.toUTCString(),
         end: date_range.end.toUTCString(),
     }
 
 
-    do_stuff(params.day, params.time_of_day, params.threshold, function(posts) {
+    do_stuff(params.day, params.hour, params.threshold, function(posts) {
 
         res.send({
             posts: posts,
@@ -123,7 +123,7 @@ app.get("/feed.xml", function(req, res) {
     }
 
     var params = get_parameters(req);
-    do_stuff(params.day, params.time_of_day, params.threshold, function(posts) {
+    do_stuff(params.day, params.hour, params.threshold, function(posts) {
         res.type("application/rss+xml");
         res.render(
             "feed",
@@ -132,30 +132,21 @@ app.get("/feed.xml", function(req, res) {
     });
 });
 
-var do_stuff = function(day, time_of_day, threshold, callback) {
+var do_stuff = function(day, hour, threshold, callback) {
     //var vals = cache.values();
     //for(var v in vals) console.log(JSON.stringify(vals[v]).length / (1024 * 1024));
 
     step(
         function() {
             client.query(
-                "select * " +
-                "from post_uses " +
-                "join posts " +
-                "on posts.post_id=post_uses.post_id " +
+                "select * from posts " + 
+                "join post_ranks on posts.post_id=post_ranks.post_id " +
                 "where " +
-                    "to_char(post_uses.use_date, 'D')::integer = $1 " +
-                    "and post_uses.use_tod = $2 " +
-                    "and use_date::date = (" +
-                        "select max(use_date::date) " +
-                        "from post_uses " +
-                        "where " +
-                            "to_char(post_uses.use_date, 'D')::integer = $1 " +
-                            "and post_uses.use_tod = $2 " +
-                    ") " +
-                "order by posts.points desc " +
-                "limit $3",
-                [day, time_of_day, threshold],
+                    "to_char(use_date, 'D') = $1 " +
+                    "and to_char(use_date, 'HH24') = $2 " +
+                    "and post_ranks.rank <= $3 " +
+                "order by posts.points desc ",
+                [day, _s.sprintf("%02d", hour), threshold],
                 this
             );
         },
@@ -188,10 +179,10 @@ var validate_inputs = function(req, res) {
         }
     }
 
-    if(req.query.tod) {
-        if(["midnight", "morning", "noon", "evening"].indexOf === -1) {
-            res.send(404, {error: "Time of day out of range"});
-            throw "Time of day out of range";
+    if(req.query.hour) {
+        if(req.query.hour < 0 || req.query.hour > 23) {
+            res.send(404, {error: "Hour out of range"});
+            throw "Hour out of range";
         }
     }
 }
@@ -200,18 +191,21 @@ var validate_inputs = function(req, res) {
 var get_parameters = function(req) {
     var threshold = parseInt(req.query.threshold) || 25;
     var day = parseInt(req.query.day) + 1 || new Date().getUTCDay() + 1;
-    var time_of_day = req.query.time_of_day || "midnight";
+    var hour = parseInt(req.query.hour) || 0;
 
     return {
         day: day,
-        time_of_day: time_of_day,
+        hour: hour,
         threshold: threshold,
     };
 }
 
-var calc_ts_range = function(day, time_of_day) {
+/*
+ * Returns the most recent date range for a given day-of-week and hour
+*/
+var calc_ts_range = function(day, hour) {
     var end = new Date();
-    end.setUTCHours(hn.hour_from_time_of_day(time_of_day));
+    end.setUTCHours(hour);
     end.setUTCMinutes(0);
     end.setUTCSeconds(0);
     end.setUTCMilliseconds(0);
