@@ -51,14 +51,6 @@ app.use(express.static(__dirname + "/static"));
 
 var step = require("step");
 
-var cache_age = 1000 * 60 * 30;
-var LRU = require("lru-cache");
-var cache = LRU({
-    max: 1024 * 1024 * 15,
-    length: function(val) {return JSON.stringify(val).length;},
-    maxAge: cache_age
-});
-
 app.get("/", function(req, res) {
     res.render(
         "index",
