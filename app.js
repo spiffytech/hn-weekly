@@ -104,7 +104,7 @@ app.get("/posts.json", function(req, res) {
     }
 
 
-    do_stuff(params.day, params.hour, params.threshold, function(posts) {
+    hn.get_posts(params.day, params.hour, params.threshold, function(posts) {
 
         res.send({
             posts: posts,
@@ -123,7 +123,7 @@ app.get("/feed.xml", function(req, res) {
     }
 
     var params = get_parameters(req);
-    do_stuff(params.day, params.hour, params.threshold, function(posts) {
+    hn.get_posts(params.day, params.hour, params.threshold, function(posts) {
         res.type("application/rss+xml");
         res.render(
             "feed",
@@ -131,38 +131,6 @@ app.get("/feed.xml", function(req, res) {
         );
     });
 });
-
-var do_stuff = function(day, hour, threshold, callback) {
-    //var vals = cache.values();
-    //for(var v in vals) console.log(JSON.stringify(vals[v]).length / (1024 * 1024));
-
-    step(
-        function() {
-            client.query(
-                "select * from posts " + 
-                "join post_ranks on posts.post_id=post_ranks.post_id " +
-                "where " +
-                    "to_char(use_date, 'D') = $1 " +
-                    "and to_char(use_date, 'HH24') = $2 " +
-                    "and post_ranks.rank <= $3 " +
-                "order by posts.points desc ",
-                [day, _s.sprintf("%02d", hour), threshold],
-                this
-            );
-        },
-        function(err, results) {
-            var posts = results.rows;
-            for(var post in posts) {
-                posts[post].permalink = "http://news.ycombinator.com/item?id=" + posts[post].post_id;
-                var d = new Date(posts[post].creation_date);
-
-                posts[post].rss_date = d.toUTCString();
-            }
-            callback(posts);
-        }
-    );
-}
-
 
 var validate_inputs = function(req, res) {
     if(req.query.threshold) {

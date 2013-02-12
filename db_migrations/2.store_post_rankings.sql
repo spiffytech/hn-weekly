@@ -1,0 +1,1 @@
+create table post_ranks (post_id integer, rank integer, use_date timestamp, max_rank bigint, FOREIGN KEY (post_id) references posts (post_id) ON DELETE cascade, primary key (rank, use_date, max_rank));
