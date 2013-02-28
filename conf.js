@@ -9,6 +9,7 @@ process.env.hnweekly_postgres_user = null;
 process.env.hnweekly_postgres_password = null;
 process.env.hnweekly_postgres_db = "hnweekly";
 process.env.hnweekly_contact_address = "fake@example.com";
+process.env.hnweekly_listen_port = 3000;
 
 try {
     require("./conf_override.js");

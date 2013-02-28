@@ -191,5 +191,5 @@ process.on("SIGINT", function() {
 
 hn.refresh_data();
 
-app.listen(process.env.VCAP_APP_PORT || 4000);
+app.listen(process.env.hnweekly_listen_port);
 console.log("Yay, started!");
