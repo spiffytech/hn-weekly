@@ -24,12 +24,19 @@ Install
 
     - conf_override.js is not checked into the git repo, so putting your settings in there means you don't have conflicts when you pull updates from upstream
 
+- Install PostgreSQL
+
+- Create a PostgreSQL database and user matching what you put in conf_override.js
+
+    - See here for how to do that: http://wiki.debian.org/PostgreSql#Installation
+
 - `npm install`
 
 - `node db_migration.js`
 
 - `node app.js`
 
+    - This will be very slow the first time you run it. HN Weekly backfills the database with everything it needs to start working, which amounts to 108,000 DB queries. I'm sorry. That's how it had to be :( If you set process.env.hnweekly_debug = true in conf_override.js, you can see it performing the inserts. After a long while you'll see a "done inserting" message, and then it's actually done. 
 
 Architecture
 ============
